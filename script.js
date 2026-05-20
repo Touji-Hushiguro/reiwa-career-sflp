@@ -430,6 +430,15 @@ function getInterviewStartEnd() {
   };
 }
 
+function pushGtmEvent(eventName, details = {}) {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: eventName,
+    lp_name: "sflp_reiwa_career",
+    ...details
+  });
+}
+
 function buildSubmissionPayload(stage) {
   const isFinal = stage === "booking_completed";
   const interview = getInterviewStartEnd();
@@ -754,6 +763,11 @@ async function confirmBooking() {
 
   try {
     await submitToSpreadsheet("booking_completed");
+    pushGtmEvent("sflp_booking_complete", {
+      booking_method: state.answers.bookingMethod,
+      booking_datetime: getInterviewLabel(),
+      booking_start: getInterviewStartEnd().start
+    });
   } catch (error) {
     bookingSubmit.disabled = false;
     bookingSubmit.textContent = "予約をする";
@@ -885,6 +899,11 @@ surveyForm.addEventListener("submit", async (event) => {
 
     try {
       await submitToSpreadsheet("lead_submitted");
+      pushGtmEvent("sflp_lead_submit", {
+        work_start: state.answers.timing,
+        job_type: state.answers.jobTypes.join(", "),
+        residence_status: state.answers.residency
+      });
       finishSurvey();
     } catch (error) {
       if (submitButton) {
