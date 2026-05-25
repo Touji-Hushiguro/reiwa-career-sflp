@@ -226,8 +226,13 @@ function mergeExistingData(data, existingRow) {
   };
 }
 
+function getRowIndexFromUpdatedRange(updatedRange = "") {
+  const match = updatedRange.match(/![A-Z]+(\d+):/);
+  return match ? Number(match[1]) : null;
+}
+
 async function appendRow(accessToken, data) {
-  await sheetsRequest(accessToken, `${SHEET_NAME}!A:Q`, {
+  const response = await sheetsRequest(accessToken, `${SHEET_NAME}!A:Q`, {
     method: "POST",
     suffix: ":append",
     params: {
@@ -238,6 +243,7 @@ async function appendRow(accessToken, data) {
       values: [buildRow(data)]
     }
   });
+  return getRowIndexFromUpdatedRange(response.updates && response.updates.updatedRange);
 }
 
 async function updateRow(accessToken, rowIndex, data) {
@@ -275,19 +281,24 @@ module.exports = async function handler(req, res) {
     const data = parsePayload(rawBody, req.headers["content-type"] || "");
     const action = data.action || "firstSubmit";
     const accessToken = await getAccessToken();
+    let rowIndex = Number(data.rowIndex || 0);
 
     if (action === "finalSubmit") {
-      const rowIndex = await findRowByPhone(accessToken, data.phone);
       if (rowIndex > 0) {
         await updateRow(accessToken, rowIndex, data);
       } else {
-        await appendRow(accessToken, data);
+        rowIndex = await findRowByPhone(accessToken, data.phone);
+        if (rowIndex > 0) {
+          await updateRow(accessToken, rowIndex, data);
+        } else {
+          rowIndex = await appendRow(accessToken, data);
+        }
       }
     } else {
-      await appendRow(accessToken, data);
+      rowIndex = await appendRow(accessToken, data);
     }
 
-    json(res, 200, { success: true });
+    json(res, 200, { success: true, rowIndex });
   } catch (error) {
     console.error(error);
     json(res, 500, { success: false, error: error.message });

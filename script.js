@@ -11,6 +11,7 @@ const state = {
     residency: "",
     phone: "",
     consent: false,
+    sheetRowIndex: "",
     bookingMethod: "",
     bookingDate: "",
     bookingDateIso: "",
@@ -449,6 +450,7 @@ function buildSubmissionPayload(stage) {
 
   return {
     action: isFinal ? "finalSubmit" : "firstSubmit",
+    rowIndex: state.answers.sheetRowIndex,
     workStart: state.answers.timing,
     jobType: state.answers.jobTypes,
     condition: conditionValues,
@@ -496,6 +498,11 @@ async function submitToSpreadsheet(stage) {
 
   if (!response.ok) {
     throw new Error("Spreadsheet submit failed");
+  }
+
+  const result = await response.json();
+  if (result && result.rowIndex) {
+    state.answers.sheetRowIndex = String(result.rowIndex);
   }
 
   return true;
