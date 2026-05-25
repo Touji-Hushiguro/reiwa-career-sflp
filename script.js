@@ -73,7 +73,7 @@ const bookingHours = Array.from({ length: 11 }, (_, index) => String(index + 10)
 const bookingMinutes = ["00", "15", "30", "45"];
 const BUSINESS_START_HOUR = 10;
 const BUSINESS_END_HOUR = 20;
-const SPREADSHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwvb-2dIF4ZT9QVk41nRaMgwIIbSEdwUnkErtyvbSDLgtHUTGvhoqxPlU0ZyHr1Xf0xRw/exec";
+const SPREADSHEET_ENDPOINT = "https://reiwa-career-sflp.vercel.app/api/submit";
 const LINE_CHAT_URL = "https://liff.line.me/2008784499-92DR4hmy/landing?follow=%40872lluqj&lp=7hDJTd&liff_id=2008784499-92DR4hmy";
 let allBookingDates = [];
 let datesExpanded = false;
@@ -486,14 +486,17 @@ async function submitToSpreadsheet(stage) {
     data: JSON.stringify(payload)
   });
 
-  await fetch(SPREADSHEET_ENDPOINT, {
+  const response = await fetch(SPREADSHEET_ENDPOINT, {
     method: "POST",
-    mode: "no-cors",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body
   });
+
+  if (!response.ok) {
+    throw new Error("Spreadsheet submit failed");
+  }
 
   return true;
 }
