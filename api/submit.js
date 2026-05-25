@@ -232,6 +232,7 @@ function getRowIndexFromUpdatedRange(updatedRange = "") {
 }
 
 async function appendRow(accessToken, data) {
+  const row = buildRow(data);
   const response = await sheetsRequest(accessToken, `${SHEET_NAME}!A:Q`, {
     method: "POST",
     suffix: ":append",
@@ -240,16 +241,25 @@ async function appendRow(accessToken, data) {
       insertDataOption: "INSERT_ROWS"
     },
     body: {
-      values: [buildRow(data)]
+      values: [row]
     }
   });
-  return getRowIndexFromUpdatedRange(response.updates && response.updates.updatedRange);
+  return {
+    rowIndex: getRowIndexFromUpdatedRange(response.updates && response.updates.updatedRange),
+    timestamp: row[COL.TIMESTAMP - 1]
+  };
 }
 
 async function updateRow(accessToken, rowIndex, data) {
-  const existingRow = await getExistingRow(accessToken, rowIndex);
-  const mergedData = mergeExistingData(data, existingRow);
-  const existingTimestamp = existingRow[COL.TIMESTAMP - 1] || timestamp();
+  let existingRow = [];
+  let mergedData = data;
+  let existingTimestamp = data.sheetTimestamp || "";
+
+  if (!existingTimestamp) {
+    existingRow = await getExistingRow(accessToken, rowIndex);
+    mergedData = mergeExistingData(data, existingRow);
+    existingTimestamp = existingRow[COL.TIMESTAMP - 1] || timestamp();
+  }
 
   await sheetsRequest(accessToken, `${SHEET_NAME}!A${rowIndex}:Q${rowIndex}`, {
     method: "PUT",
@@ -282,6 +292,7 @@ module.exports = async function handler(req, res) {
     const action = data.action || "firstSubmit";
     const accessToken = await getAccessToken();
     let rowIndex = Number(data.rowIndex || 0);
+    let sheetTimestamp = data.sheetTimestamp || "";
 
     if (action === "finalSubmit") {
       if (rowIndex > 0) {
@@ -291,14 +302,18 @@ module.exports = async function handler(req, res) {
         if (rowIndex > 0) {
           await updateRow(accessToken, rowIndex, data);
         } else {
-          rowIndex = await appendRow(accessToken, data);
+          const appended = await appendRow(accessToken, data);
+          rowIndex = appended.rowIndex;
+          sheetTimestamp = appended.timestamp;
         }
       }
     } else {
-      rowIndex = await appendRow(accessToken, data);
+      const appended = await appendRow(accessToken, data);
+      rowIndex = appended.rowIndex;
+      sheetTimestamp = appended.timestamp;
     }
 
-    json(res, 200, { success: true, rowIndex });
+    json(res, 200, { success: true, rowIndex, sheetTimestamp });
   } catch (error) {
     console.error(error);
     json(res, 500, { success: false, error: error.message });

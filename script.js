@@ -12,6 +12,7 @@ const state = {
     phone: "",
     consent: false,
     sheetRowIndex: "",
+    sheetTimestamp: "",
     bookingMethod: "",
     bookingDate: "",
     bookingDateIso: "",
@@ -451,6 +452,7 @@ function buildSubmissionPayload(stage) {
   return {
     action: isFinal ? "finalSubmit" : "firstSubmit",
     rowIndex: state.answers.sheetRowIndex,
+    sheetTimestamp: state.answers.sheetTimestamp,
     workStart: state.answers.timing,
     jobType: state.answers.jobTypes,
     condition: conditionValues,
@@ -503,6 +505,9 @@ async function submitToSpreadsheet(stage) {
   const result = await response.json();
   if (result && result.rowIndex) {
     state.answers.sheetRowIndex = String(result.rowIndex);
+  }
+  if (result && result.sheetTimestamp) {
+    state.answers.sheetTimestamp = result.sheetTimestamp;
   }
 
   return true;
