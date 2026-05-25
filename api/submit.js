@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "1Vq0uK-w9M4EKft3l1TyzNz06yPrhtTTovH0Nb7inM1w";
-const SHEET_NAME = process.env.SHEET_NAME || "顧客データDB";
+const SHEET_NAME = (process.env.SHEET_NAME || "顧客データDB").trim();
 const TOTAL_COLS = 17;
 const TZ = "Asia/Tokyo";
 
