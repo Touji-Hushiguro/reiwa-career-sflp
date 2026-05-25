@@ -76,7 +76,19 @@ function base64Url(input) {
 
 async function getAccessToken() {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = (process.env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+  let privateKey = process.env.GOOGLE_PRIVATE_KEY || "";
+
+  privateKey = privateKey.trim();
+  if (privateKey.startsWith("{")) {
+    privateKey = JSON.parse(privateKey).private_key || "";
+  }
+  if (
+    (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+    (privateKey.startsWith("'") && privateKey.endsWith("'"))
+  ) {
+    privateKey = privateKey.slice(1, -1);
+  }
+  privateKey = privateKey.replace(/\\n/g, "\n").trim();
 
   if (!clientEmail || !privateKey) {
     throw new Error("Google service account environment variables are missing");
