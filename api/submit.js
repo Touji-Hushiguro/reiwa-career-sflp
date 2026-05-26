@@ -226,26 +226,28 @@ function mergeExistingData(data, existingRow) {
   };
 }
 
-function getRowIndexFromUpdatedRange(updatedRange = "") {
-  const match = updatedRange.match(/![A-Z]+(\d+):/);
-  return match ? Number(match[1]) : null;
+async function findNextWritableRow(accessToken) {
+  const response = await sheetsRequest(accessToken, `${SHEET_NAME}!A:A`);
+  const rows = response.values || [];
+  return Math.max(rows.length + 1, 2);
 }
 
 async function appendRow(accessToken, data) {
   const row = buildRow(data);
-  const response = await sheetsRequest(accessToken, `${SHEET_NAME}!A:Q`, {
-    method: "POST",
-    suffix: ":append",
+  const rowIndex = await findNextWritableRow(accessToken);
+
+  await sheetsRequest(accessToken, `${SHEET_NAME}!A${rowIndex}:Q${rowIndex}`, {
+    method: "PUT",
     params: {
-      valueInputOption: "USER_ENTERED",
-      insertDataOption: "INSERT_ROWS"
+      valueInputOption: "USER_ENTERED"
     },
     body: {
       values: [row]
     }
   });
+
   return {
-    rowIndex: getRowIndexFromUpdatedRange(response.updates && response.updates.updatedRange),
+    rowIndex,
     timestamp: row[COL.TIMESTAMP - 1]
   };
 }
