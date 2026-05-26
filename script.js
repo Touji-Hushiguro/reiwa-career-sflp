@@ -1,15 +1,20 @@
 const state = {
   currentStep: 1,
   answers: {
-    mood: "",
     timing: "",
     jobTypes: [],
-    zip: "",
+    gender: "",
+    birthYear: "",
+    birthMonth: "",
+    birthDay: "",
     birthDate: "",
     name: "",
-    kana: "",
-    residency: "",
+    prefecture: "",
+    email: "",
     phone: "",
+    otpCode: "",
+    otpSent: false,
+    otpVerified: false,
     consent: false,
     sheetRowIndex: "",
     sheetTimestamp: "",
@@ -25,29 +30,31 @@ const state = {
 
 const steps = {
   1: {
-    title: "お気持ちはどちらに近いですか？",
-    key: "mood",
-    choices: ["転職活動をしたい", "今は情報収集したい"]
+    title: "いつごろから働きたいですか？",
+    key: "timing",
+    choices: [
+      { label: "👍 1ヶ月以内", value: "1ヶ月以内" },
+      { label: "✌️ 3ヶ月以内", value: "3ヶ月以内" },
+      { label: "👋 6ヶ月以内", value: "6ヶ月以内" },
+      { label: "決まっていない", value: "決まっていない" }
+    ]
   },
   2: {
-    title: "いつ頃の転職をご希望ですか？",
-    key: "timing",
-    choices: ["1か月以内", "3か月以内", "6か月以内", "よい求人があれば"]
-  },
-  3: {
-    title: "ご希望の職種を教えてください",
-    key: "jobTypes",
-    multiple: true,
-    choices: ["営業", "事務・アシスタント", "販売・サービス", "IT・エンジニア", "製造・軽作業", "クリエイティブ", "専門職", "その他"]
+    title: "性別を選択してください",
+    key: "gender",
+    choices: ["男性", "女性", "その他"]
   }
 };
 
-const residencyOptions = [
-  "選択してください",
-  "日本国籍",
-  "永住者",
-  "定住者",
-  "その他"
+const prefectures = [
+  "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+  "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+  "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県",
+  "岐阜県", "静岡県", "愛知県", "三重県",
+  "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県",
+  "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+  "徳島県", "香川県", "愛媛県", "高知県",
+  "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"
 ];
 
 const lpContent = document.getElementById("lpContent");
@@ -76,6 +83,7 @@ const bookingMinutes = ["00", "15", "30", "45"];
 const BUSINESS_START_HOUR = 10;
 const BUSINESS_END_HOUR = 20;
 const SPREADSHEET_ENDPOINT = "https://project-alorn.vercel.app/api/submit";
+const API_BASE = SPREADSHEET_ENDPOINT.replace(/\/api\/submit$/, "");
 const LINE_CHAT_URL = "https://liff.line.me/2008784499-92DR4hmy/landing?follow=%40872lluqj&lp=7hDJTd&liff_id=2008784499-92DR4hmy";
 let allBookingDates = [];
 let datesExpanded = false;
@@ -83,33 +91,40 @@ let datesExpanded = false;
 function renderStep() {
   progressText.textContent = `STEP ${state.currentStep} / 6`;
 
-  if (state.currentStep <= 3) {
+  if (state.currentStep <= 2) {
     renderChoiceStep();
     return;
   }
 
+  if (state.currentStep === 3) {
+    renderBirthDateStep();
+    return;
+  }
+
   if (state.currentStep === 4) {
-    renderZipStep();
+    renderPrefectureStep();
     return;
   }
 
   if (state.currentStep === 5) {
-    renderProfileStep();
+    renderNameStep();
     return;
   }
 
-  renderPhoneStep();
+  renderContactStep();
 }
 
 function renderChoiceStep() {
   const step = steps[state.currentStep];
   const buttons = step.choices
     .map((choice) => {
+      const value = typeof choice === "string" ? choice : choice.value;
+      const label = typeof choice === "string" ? choice : choice.label;
       const isSelected = step.multiple
-        ? state.answers[step.key].includes(choice)
-        : state.answers[step.key] === choice;
+        ? state.answers[step.key].includes(value)
+        : state.answers[step.key] === value;
       const selectedClass = isSelected ? " is-selected" : "";
-      return `<button class="choice-button${selectedClass}" type="button" data-choice="${choice}">${choice}</button>`;
+      return `<button class="choice-button${selectedClass}" type="button" data-choice="${escapeHtml(value)}">${escapeHtml(label)}</button>`;
     })
     .join("");
 
@@ -192,6 +207,128 @@ function renderZipStep() {
   bindBackLink();
   validate();
   zipInput.focus();
+}
+
+function renderBirthDateStep() {
+  const yearOptions = Array.from({ length: 13 }, (_, index) => 2005 - index)
+    .map((year) => `<option value="${year}" ${String(year) === state.answers.birthYear ? "selected" : ""}>${year}年</option>`)
+    .join("");
+  const monthOptions = Array.from({ length: 12 }, (_, index) => index + 1)
+    .map((month) => `<option value="${month}" ${String(month) === state.answers.birthMonth ? "selected" : ""}>${month}月</option>`)
+    .join("");
+  const dayOptions = Array.from({ length: 31 }, (_, index) => index + 1)
+    .map((day) => `<option value="${day}" ${String(day) === state.answers.birthDay ? "selected" : ""}>${day}日</option>`)
+    .join("");
+
+  stepContainer.innerHTML = `
+    <h1 class="step-title">生年月日を入力してください</h1>
+    <div class="field guide-field" data-guide="birthDate">
+      <label>生年月日</label>
+      <div class="triple-select">
+        <select id="birthYear" name="birthYear"><option value="">年</option>${yearOptions}</select>
+        <select id="birthMonth" name="birthMonth"><option value="">月</option>${monthOptions}</select>
+        <select id="birthDay" name="birthDay"><option value="">日</option>${dayOptions}</select>
+      </div>
+    </div>
+    <p class="error-text" id="birthDateError"></p>
+    <div class="question-buttons has-mascot" data-guide="birthSubmit">
+      <button class="primary-button" type="button" id="birthNext" disabled>次へ</button>
+    </div>
+    <button class="back-link" type="button" data-back>戻る</button>
+    ${guideMascotMarkup("guideMascot")}
+  `;
+
+  const inputs = {
+    year: document.getElementById("birthYear"),
+    month: document.getElementById("birthMonth"),
+    day: document.getElementById("birthDay")
+  };
+  const nextButton = document.getElementById("birthNext");
+  const error = document.getElementById("birthDateError");
+
+  const validate = () => {
+    state.answers.birthYear = inputs.year.value;
+    state.answers.birthMonth = inputs.month.value;
+    state.answers.birthDay = inputs.day.value;
+    state.answers.birthDate = formatBirthDate();
+    const validDate = isValidSelectedBirthDate();
+    const validAge = validDate && getAge(state.answers.birthDate) >= 21;
+    nextButton.disabled = !(validDate && validAge);
+    error.textContent = validDate && !validAge ? "21歳未満の方はお申し込みいただけません" : "";
+    moveGuideMascot(getGuideElement(validDate && validAge ? "birthSubmit" : "birthDate"));
+  };
+
+  Object.values(inputs).forEach((input) => input.addEventListener("change", validate));
+  nextButton.addEventListener("click", () => goToStep(4));
+  bindBackLink();
+  validate();
+  inputs.year.focus();
+}
+
+function renderPrefectureStep() {
+  stepContainer.innerHTML = `
+    <h1 class="step-title">お住まいの都道府県を選択してください</h1>
+    <div class="field guide-field" data-guide="prefecture">
+      <label for="prefecture">都道府県</label>
+      <select id="prefecture" name="prefecture">
+        <option value="">選択してください</option>
+        ${prefectures.map((prefecture) => `<option value="${prefecture}" ${state.answers.prefecture === prefecture ? "selected" : ""}>${prefecture}</option>`).join("")}
+      </select>
+    </div>
+    <div class="question-buttons has-mascot" data-guide="prefectureSubmit">
+      <button class="primary-button" type="button" id="prefectureNext" disabled>次へ</button>
+    </div>
+    <button class="back-link" type="button" data-back>戻る</button>
+    ${guideMascotMarkup("guideMascot")}
+  `;
+
+  const select = document.getElementById("prefecture");
+  const nextButton = document.getElementById("prefectureNext");
+  const validate = () => {
+    state.answers.prefecture = select.value;
+    nextButton.disabled = !state.answers.prefecture;
+    moveGuideMascot(getGuideElement(state.answers.prefecture ? "prefectureSubmit" : "prefecture"));
+  };
+
+  select.addEventListener("change", validate);
+  nextButton.addEventListener("click", () => goToStep(5));
+  bindBackLink();
+  validate();
+  select.focus();
+}
+
+function renderNameStep() {
+  stepContainer.innerHTML = `
+    <h1 class="step-title">お名前をカタカナで入力してください</h1>
+    <div class="field guide-field" data-guide="name">
+      <label for="name">氏名</label>
+      <input id="name" name="name" autocomplete="name" placeholder="ヤマダ タロウ" value="${escapeHtml(state.answers.name)}">
+    </div>
+    <p class="error-text" id="nameError"></p>
+    <div class="question-buttons has-mascot" data-guide="nameSubmit">
+      <button class="primary-button" type="button" id="nameNext" disabled>次へ</button>
+    </div>
+    <button class="back-link" type="button" data-back>戻る</button>
+    ${guideMascotMarkup("guideMascot")}
+  `;
+
+  const input = document.getElementById("name");
+  const nextButton = document.getElementById("nameNext");
+  const error = document.getElementById("nameError");
+  const validate = () => {
+    state.answers.name = normalizeKatakanaName(input.value);
+    input.value = state.answers.name;
+    const valid = isFullWidthKatakanaName(state.answers.name);
+    nextButton.disabled = !valid;
+    error.textContent = state.answers.name && !valid ? "全角カタカナで入力してください" : "";
+    moveGuideMascot(getGuideElement(valid ? "nameSubmit" : "name"));
+  };
+
+  input.addEventListener("input", validate);
+  nextButton.addEventListener("click", () => goToStep(6));
+  bindBackLink();
+  validate();
+  input.focus();
 }
 
 function renderProfileStep() {
@@ -296,6 +433,91 @@ function renderPhoneStep() {
   phoneInput.focus();
 }
 
+function renderContactStep() {
+  stepContainer.innerHTML = `
+    <h1 class="step-title">連絡先を入力してください</h1>
+    <div class="field guide-field" data-guide="email">
+      <label for="email">メールアドレス</label>
+      <input id="email" name="email" inputmode="email" autocomplete="email" placeholder="example@mail.com" value="${escapeHtml(state.answers.email)}">
+    </div>
+    <div class="field guide-field" data-guide="phone">
+      <label for="phone">電話番号</label>
+      <input id="phone" name="phone" inputmode="tel" autocomplete="tel" maxlength="13" placeholder="090-1234-5678" value="${escapeHtml(state.answers.phone)}">
+    </div>
+    <div class="question-buttons has-mascot" data-guide="otpSend">
+      <button class="primary-button" type="button" id="sendOtpButton" disabled>${state.answers.otpSent ? "認証コードを再送信" : "認証コードを送信"}</button>
+    </div>
+    <div class="field guide-field" data-guide="otp" ${state.answers.otpSent ? "" : "hidden"}>
+      <label for="otpCode">6桁の認証コード</label>
+      <input id="otpCode" name="otpCode" inputmode="numeric" maxlength="6" placeholder="123456" value="${escapeHtml(state.answers.otpCode)}">
+    </div>
+    <div class="question-buttons has-mascot" data-guide="otpVerify" ${state.answers.otpSent ? "" : "hidden"}>
+      <button class="primary-button" type="button" id="verifyOtpButton" disabled>${state.answers.otpVerified ? "認証済み" : "認証する"}</button>
+    </div>
+    <p class="error-text" id="contactError"></p>
+    <label class="consent guide-field" data-guide="consent">
+      <input id="consent" type="checkbox" ${state.answers.consent ? "checked" : ""}>
+      <span><a href="https://box-hr.co.jp/terms/" target="_blank" rel="noopener">利用規約</a> / プライバシーポリシーを読んで、サービス利用に同意する</span>
+    </label>
+    <div class="question-buttons has-mascot" data-guide="contactSubmit">
+      <button class="primary-button" type="button" id="submitButton" disabled>面談予約へ進む</button>
+    </div>
+    <button class="back-link" type="button" data-back>戻る</button>
+    ${guideMascotMarkup("guideMascot")}
+  `;
+
+  const emailInput = document.getElementById("email");
+  const phoneInput = document.getElementById("phone");
+  const otpInput = document.getElementById("otpCode");
+  const consentInput = document.getElementById("consent");
+  const sendOtpButton = document.getElementById("sendOtpButton");
+  const verifyOtpButton = document.getElementById("verifyOtpButton");
+  const submitButton = document.getElementById("submitButton");
+  const error = document.getElementById("contactError");
+
+  const validate = () => {
+    state.answers.email = emailInput.value.trim();
+    state.answers.phone = formatPhoneInput(phoneInput.value);
+    phoneInput.value = state.answers.phone;
+    state.answers.otpCode = otpInput ? onlyDigits(otpInput.value).slice(0, 6) : "";
+    if (otpInput) otpInput.value = state.answers.otpCode;
+    state.answers.consent = consentInput.checked;
+
+    const validEmail = isValidEmail(state.answers.email);
+    const validPhone = isValidPhone(state.answers.phone);
+    const validOtp = /^\d{6}$/.test(state.answers.otpCode);
+    sendOtpButton.disabled = !(validEmail && validPhone) || state.answers.otpVerified;
+    verifyOtpButton.disabled = !(state.answers.otpSent && validOtp) || state.answers.otpVerified;
+    submitButton.disabled = !(validEmail && validPhone && state.answers.otpVerified && state.answers.consent);
+    updateContactMascot(validEmail, validPhone, validOtp);
+  };
+
+  emailInput.addEventListener("input", () => {
+    state.answers.otpSent = false;
+    state.answers.otpVerified = false;
+    validate();
+  });
+  phoneInput.addEventListener("input", () => {
+    state.answers.otpSent = false;
+    state.answers.otpVerified = false;
+    validate();
+  });
+  if (otpInput) otpInput.addEventListener("input", validate);
+  consentInput.addEventListener("change", validate);
+  sendOtpButton.addEventListener("click", async () => {
+    const sent = await sendOtpCode(sendOtpButton, error);
+    if (sent) renderContactStep();
+  });
+  verifyOtpButton.addEventListener("click", async () => {
+    await verifyOtpCode(verifyOtpButton, error);
+    validate();
+  });
+  submitButton.addEventListener("click", submitLeadAndShowThanks);
+  bindBackLink();
+  validate();
+  emailInput.focus();
+}
+
 function bindBackLink() {
   const back = stepContainer.querySelector("[data-back]");
   if (back) {
@@ -374,6 +596,21 @@ function updatePhoneMascot(validPhone) {
   moveGuideMascot(getGuideElement(nextTarget));
 }
 
+function updateContactMascot(validEmail, validPhone, validOtp) {
+  const nextTarget = !validEmail
+    ? "email"
+    : !validPhone
+      ? "phone"
+      : !state.answers.otpSent
+        ? "otpSend"
+        : !state.answers.otpVerified
+          ? (validOtp ? "otpVerify" : "otp")
+          : !state.answers.consent
+            ? "consent"
+            : "contactSubmit";
+  moveGuideMascot(getGuideElement(nextTarget));
+}
+
 function isValidBirthDate(value) {
   if (!/^\d{8}$/.test(value)) {
     return false;
@@ -388,17 +625,69 @@ function isValidBirthDate(value) {
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
+function formatBirthDate() {
+  if (!state.answers.birthYear || !state.answers.birthMonth || !state.answers.birthDay) {
+    return "";
+  }
+  return [
+    state.answers.birthYear,
+    String(state.answers.birthMonth).padStart(2, "0"),
+    String(state.answers.birthDay).padStart(2, "0")
+  ].join("-");
+}
+
+function isValidSelectedBirthDate() {
+  if (!state.answers.birthYear || !state.answers.birthMonth || !state.answers.birthDay) {
+    return false;
+  }
+  const year = Number(state.answers.birthYear);
+  const month = Number(state.answers.birthMonth);
+  const day = Number(state.answers.birthDay);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function getAge(birthDate) {
+  if (!birthDate) return 0;
+  const [year, month, day] = birthDate.split("-").map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const birthdayPassed = today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day);
+  if (!birthdayPassed) age -= 1;
+  return age;
+}
+
 function toKatakana(value) {
   return value.replace(/[\u3041-\u3096]/g, (char) =>
     String.fromCharCode(char.charCodeAt(0) + 0x60)
   );
 }
 
+function normalizeKatakanaName(value) {
+  return toKatakana(value)
+    .replace(/[ 　]+/g, " ")
+    .replace(/[^ァ-ヶー 　]/g, "")
+    .trimStart();
+}
+
+function isFullWidthKatakanaName(value) {
+  return /^[ァ-ヶー]+(?:[ 　][ァ-ヶー]+)*$/.test(value.trim());
+}
+
 function getMergedFullName() {
-  if (state.answers.name && state.answers.kana) {
-    return `${state.answers.name}（${state.answers.kana}）`;
-  }
-  return state.answers.name || state.answers.kana;
+  return state.answers.name;
+}
+
+function formatPhoneInput(value) {
+  return onlyDigits(value).slice(0, 11);
+}
+
+function isValidPhone(value) {
+  return /^\d{10,11}$/.test(onlyDigits(value));
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function escapeHtml(value) {
@@ -445,7 +734,6 @@ function buildSubmissionPayload(stage) {
   const isFinal = stage === "booking_completed";
   const interview = getInterviewStartEnd();
   const conditionValues = [
-    state.answers.mood,
     isFinal && state.answers.bookingMethod ? `面談方法: ${state.answers.bookingMethod}` : ""
   ].filter(Boolean);
 
@@ -456,16 +744,16 @@ function buildSubmissionPayload(stage) {
     workStart: state.answers.timing,
     jobType: state.answers.jobTypes,
     condition: conditionValues,
-    education: state.answers.zip,
-    employmentStatus: state.answers.residency,
+    education: "",
+    employmentStatus: "",
     fullName: getMergedFullName(),
     birthDate: state.answers.birthDate,
-    gender: "",
+    gender: state.answers.gender,
     phone: state.answers.phone,
-    email: isFinal ? state.answers.bookingEmail : "",
-    prefecture: "",
-    postalCode: state.answers.zip,
-    residenceStatus: state.answers.residency,
+    email: state.answers.email || state.answers.bookingEmail,
+    prefecture: state.answers.prefecture,
+    postalCode: "",
+    residenceStatus: "",
     interviewMethod: state.answers.bookingMethod,
     interviewDateTime1: isFinal ? getInterviewLabel() : "",
     interviewDateTime2: "",
@@ -513,6 +801,89 @@ async function submitToSpreadsheet(stage) {
   return true;
 }
 
+async function sendOtpCode(button, errorElement) {
+  button.disabled = true;
+  button.textContent = "送信中...";
+  errorElement.textContent = "";
+
+  try {
+    const response = await fetch(`${API_BASE}/api/send-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ phone: state.answers.phone })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "SMS送信に失敗しました");
+    }
+    state.answers.otpSent = true;
+    state.answers.otpVerified = false;
+    return true;
+  } catch (error) {
+    errorElement.textContent = "認証コードを送信できませんでした。設定を確認してください。";
+    state.answers.otpSent = false;
+    return false;
+  } finally {
+    button.disabled = false;
+    button.textContent = state.answers.otpSent ? "認証コードを再送信" : "認証コードを送信";
+  }
+}
+
+async function verifyOtpCode(button, errorElement) {
+  button.disabled = true;
+  button.textContent = "認証中...";
+  errorElement.textContent = "";
+
+  try {
+    const response = await fetch(`${API_BASE}/api/verify-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        phone: state.answers.phone,
+        code: state.answers.otpCode
+      })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success || !result.verified) {
+      throw new Error(result.error || "SMS認証に失敗しました");
+    }
+    state.answers.otpVerified = true;
+    button.textContent = "認証済み";
+  } catch (error) {
+    errorElement.textContent = "認証コードが正しくありません";
+    state.answers.otpVerified = false;
+    button.textContent = "認証する";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function submitLeadAndShowThanks() {
+  const submitButton = document.getElementById("submitButton");
+  if (!submitButton || submitButton.disabled) return;
+
+  submitButton.disabled = true;
+  submitButton.textContent = "送信中...";
+
+  try {
+    await submitToSpreadsheet("lead_submitted");
+    pushGtmEvent("sflp_lead_submit", {
+      work_start: state.answers.timing,
+      gender: state.answers.gender,
+      prefecture: state.answers.prefecture
+    });
+    finishSurvey();
+  } catch (error) {
+    submitButton.disabled = false;
+    submitButton.textContent = "面談予約へ進む";
+    alert("送信に失敗しました。時間をおいてもう一度お試しください。");
+  }
+}
+
 function finishSurvey() {
   surveyOverlay.style.display = "none";
   lpContent.classList.remove("is-blurred");
@@ -528,6 +899,10 @@ function finishSurvey() {
 function renderBookingOptions() {
   allBookingDates = getBookingDates();
   datesExpanded = false;
+  if (!state.answers.bookingEmail && state.answers.email) {
+    state.answers.bookingEmail = state.answers.email;
+    bookingEmail.value = state.answers.email;
+  }
   renderDateOptions();
   renderTimeOptions();
   if (!document.getElementById("bookingGuideMascot")) {
@@ -904,29 +1279,8 @@ if (lineChatButton) {
 
 surveyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const validPhone = /^\d{10,11}$/.test(state.answers.phone);
-  if (validPhone && state.answers.consent) {
-    const submitButton = document.getElementById("submitButton");
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = "送信中...";
-    }
-
-    try {
-      await submitToSpreadsheet("lead_submitted");
-      pushGtmEvent("sflp_lead_submit", {
-        work_start: state.answers.timing,
-        job_type: state.answers.jobTypes.join(", "),
-        residence_status: state.answers.residency
-      });
-      finishSurvey();
-    } catch (error) {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = "無料で求人を見てみる";
-      }
-      alert("送信に失敗しました。時間をおいてもう一度お試しください。");
-    }
+  if (state.currentStep === 6 && state.answers.otpVerified) {
+    submitLeadAndShowThanks();
   }
 });
 

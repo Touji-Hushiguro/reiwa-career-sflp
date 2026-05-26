@@ -522,6 +522,16 @@ body.modal-open .survey-brand-footer {
   outline: 3px solid rgba(60, 171, 173, 0.18);
 }
 
+.triple-select {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 0.9fr;
+  gap: 8px;
+}
+
+.triple-select select {
+  padding-right: 10px;
+}
+
 .note {
   margin: 0 0 16px;
   font-size: 12px;
