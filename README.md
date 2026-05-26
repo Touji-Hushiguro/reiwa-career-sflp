@@ -23,8 +23,5 @@ Vercelに設定する環境変数:
 - `GOOGLE_PRIVATE_KEY`
 - `SPREADSHEET_ID`
 - `SHEET_NAME`
-- `TWILIO_ACCOUNT_SID`
-- `TWILIO_AUTH_TOKEN`
-- `TWILIO_VERIFY_SID`
 
 対象スプレッドシートには、サービスアカウントのメールアドレスを編集者として共有してください。

@@ -12,9 +12,6 @@ const state = {
     prefecture: "",
     email: "",
     phone: "",
-    otpCode: "",
-    otpSent: false,
-    otpVerified: false,
     consent: false,
     sheetRowIndex: "",
     sheetTimestamp: "",
@@ -173,42 +170,6 @@ function updateMultiNextButton(key) {
   }
 }
 
-function renderZipStep() {
-  stepContainer.innerHTML = `
-    <h1 class="step-title">お住まいの郵便番号</h1>
-    <div class="field guide-field" data-guide="zip">
-      <label for="zip">お住まいの郵便番号</label>
-      <input id="zip" name="zip" inputmode="numeric" autocomplete="postal-code" maxlength="7" placeholder="例: 1234567" value="${escapeHtml(state.answers.zip)}">
-    </div>
-    <p class="note">※ 郵便番号を入れていただくことで、お住まいの地域に合わせた求人をご紹介しやすくなります</p>
-    <p class="error-text" id="zipError"></p>
-    <div class="question-buttons has-mascot" data-guide="zipSubmit">
-      <button class="primary-button" type="button" id="zipNext" disabled>残り2ステップ</button>
-    </div>
-    <button class="back-link" type="button" data-back>戻る</button>
-    ${guideMascotMarkup("guideMascot")}
-  `;
-
-  const zipInput = document.getElementById("zip");
-  const nextButton = document.getElementById("zipNext");
-  const error = document.getElementById("zipError");
-
-  const validate = () => {
-    state.answers.zip = onlyDigits(zipInput.value).slice(0, 7);
-    zipInput.value = state.answers.zip;
-    const valid = /^\d{7}$/.test(state.answers.zip);
-    nextButton.disabled = !valid;
-    error.textContent = state.answers.zip && !valid ? "7桁の数字で入力してください" : "";
-    moveGuideMascot(getGuideElement(valid ? "zipSubmit" : "zip"));
-  };
-
-  zipInput.addEventListener("input", validate);
-  nextButton.addEventListener("click", () => goToStep(5));
-  bindBackLink();
-  validate();
-  zipInput.focus();
-}
-
 function renderBirthDateStep() {
   const yearOptions = Array.from({ length: 13 }, (_, index) => 2005 - index)
     .map((year) => `<option value="${year}" ${String(year) === state.answers.birthYear ? "selected" : ""}>${year}年</option>`)
@@ -331,108 +292,6 @@ function renderNameStep() {
   input.focus();
 }
 
-function renderProfileStep() {
-  stepContainer.innerHTML = `
-    <h1 class="step-title">プロフィールを教えてください</h1>
-    <div class="field guide-field" data-guide="birthDate">
-      <label for="birthDate">生年月日</label>
-      <input id="birthDate" name="birthDate" inputmode="numeric" autocomplete="bday" maxlength="8" placeholder="例: 19900602" value="${escapeHtml(state.answers.birthDate)}">
-    </div>
-    <div class="field guide-field" data-guide="name">
-      <label for="name">お名前</label>
-      <input id="name" name="name" autocomplete="name" placeholder="例: 山田太郎" value="${escapeHtml(state.answers.name)}">
-    </div>
-    <div class="field guide-field" data-guide="kana">
-      <label for="kana">フリガナ（カタカナ）</label>
-      <input id="kana" name="kana" placeholder="例: ヤマダタロウ" value="${escapeHtml(state.answers.kana)}">
-    </div>
-    <div class="field guide-field" data-guide="residency">
-      <label for="residency">在留資格など、該当するものをお選びください</label>
-      <select id="residency" name="residency">
-        ${residencyOptions.map((option, index) => `<option value="${index === 0 ? "" : option}" ${state.answers.residency === option ? "selected" : ""}>${option}</option>`).join("")}
-      </select>
-    </div>
-    <p class="error-text" id="profileError"></p>
-    <div class="question-buttons has-mascot" data-guide="profileSubmit">
-      <button class="primary-button" type="button" id="profileNext" disabled>残り1ステップ</button>
-    </div>
-    <button class="back-link" type="button" data-back>戻る</button>
-    ${guideMascotMarkup("guideMascot")}
-  `;
-
-  const inputs = {
-    birthDate: document.getElementById("birthDate"),
-    name: document.getElementById("name"),
-    kana: document.getElementById("kana"),
-    residency: document.getElementById("residency")
-  };
-  const nextButton = document.getElementById("profileNext");
-  const error = document.getElementById("profileError");
-
-  const validate = () => {
-    state.answers.birthDate = onlyDigits(inputs.birthDate.value).slice(0, 8);
-    inputs.birthDate.value = state.answers.birthDate;
-    state.answers.name = inputs.name.value.trim();
-    state.answers.kana = toKatakana(inputs.kana.value.trim());
-    inputs.kana.value = state.answers.kana;
-    state.answers.residency = inputs.residency.value;
-
-    const validBirthDate = isValidBirthDate(state.answers.birthDate);
-    const valid = validBirthDate && state.answers.name && state.answers.kana && state.answers.residency;
-    nextButton.disabled = !valid;
-    error.textContent = state.answers.birthDate && !validBirthDate ? "生年月日は19900602のように8桁で入力してください" : "";
-    updateProfileMascot(validBirthDate);
-  };
-
-  Object.values(inputs).forEach((input) => input.addEventListener("input", validate));
-  inputs.residency.addEventListener("change", validate);
-  nextButton.addEventListener("click", () => goToStep(6));
-  bindBackLink();
-  validate();
-  inputs.birthDate.focus();
-}
-
-function renderPhoneStep() {
-  stepContainer.innerHTML = `
-    <h1 class="step-title">電話番号</h1>
-    <div class="field guide-field" data-guide="phone">
-      <label for="phone">電話番号</label>
-      <input id="phone" name="phone" inputmode="tel" autocomplete="tel" maxlength="11" placeholder="例: 09012345678" value="${escapeHtml(state.answers.phone)}">
-    </div>
-    <p class="error-text" id="phoneError">正しい電話番号を入力してください</p>
-    <label class="consent guide-field" data-guide="consent">
-      <input id="consent" type="checkbox" ${state.answers.consent ? "checked" : ""}>
-      <span><a href="https://box-hr.co.jp/terms/" target="_blank" rel="noopener">利用規約</a> / プライバシーポリシーを読んで、サービス利用に同意する</span>
-    </label>
-    <div class="question-buttons has-mascot" data-guide="phoneSubmit">
-      <button class="primary-button" type="submit" id="submitButton" disabled>無料で求人を見てみる</button>
-    </div>
-    <button class="back-link" type="button" data-back>戻る</button>
-    ${guideMascotMarkup("guideMascot")}
-  `;
-
-  const phoneInput = document.getElementById("phone");
-  const consentInput = document.getElementById("consent");
-  const submitButton = document.getElementById("submitButton");
-  const error = document.getElementById("phoneError");
-
-  const validate = () => {
-    state.answers.phone = onlyDigits(phoneInput.value).slice(0, 11);
-    phoneInput.value = state.answers.phone;
-    state.answers.consent = consentInput.checked;
-    const validPhone = /^\d{10,11}$/.test(state.answers.phone);
-    submitButton.disabled = !(validPhone && state.answers.consent);
-    error.style.visibility = state.answers.phone && !validPhone ? "visible" : "hidden";
-    updatePhoneMascot(validPhone);
-  };
-
-  phoneInput.addEventListener("input", validate);
-  consentInput.addEventListener("change", validate);
-  bindBackLink();
-  validate();
-  phoneInput.focus();
-}
-
 function renderContactStep() {
   stepContainer.innerHTML = `
     <h1 class="step-title">連絡先を入力してください</h1>
@@ -443,16 +302,6 @@ function renderContactStep() {
     <div class="field guide-field" data-guide="phone">
       <label for="phone">電話番号</label>
       <input id="phone" name="phone" inputmode="tel" autocomplete="tel" maxlength="13" placeholder="090-1234-5678" value="${escapeHtml(state.answers.phone)}">
-    </div>
-    <div class="question-buttons has-mascot" data-guide="otpSend">
-      <button class="primary-button" type="button" id="sendOtpButton" disabled>${state.answers.otpSent ? "認証コードを再送信" : "認証コードを送信"}</button>
-    </div>
-    <div class="field guide-field" data-guide="otp" ${state.answers.otpSent ? "" : "hidden"}>
-      <label for="otpCode">6桁の認証コード</label>
-      <input id="otpCode" name="otpCode" inputmode="numeric" maxlength="6" placeholder="123456" value="${escapeHtml(state.answers.otpCode)}">
-    </div>
-    <div class="question-buttons has-mascot" data-guide="otpVerify" ${state.answers.otpSent ? "" : "hidden"}>
-      <button class="primary-button" type="button" id="verifyOtpButton" disabled>${state.answers.otpVerified ? "認証済み" : "認証する"}</button>
     </div>
     <p class="error-text" id="contactError"></p>
     <label class="consent guide-field" data-guide="consent">
@@ -468,50 +317,24 @@ function renderContactStep() {
 
   const emailInput = document.getElementById("email");
   const phoneInput = document.getElementById("phone");
-  const otpInput = document.getElementById("otpCode");
   const consentInput = document.getElementById("consent");
-  const sendOtpButton = document.getElementById("sendOtpButton");
-  const verifyOtpButton = document.getElementById("verifyOtpButton");
   const submitButton = document.getElementById("submitButton");
-  const error = document.getElementById("contactError");
 
   const validate = () => {
     state.answers.email = emailInput.value.trim();
     state.answers.phone = formatPhoneInput(phoneInput.value);
     phoneInput.value = state.answers.phone;
-    state.answers.otpCode = otpInput ? onlyDigits(otpInput.value).slice(0, 6) : "";
-    if (otpInput) otpInput.value = state.answers.otpCode;
     state.answers.consent = consentInput.checked;
 
     const validEmail = isValidEmail(state.answers.email);
     const validPhone = isValidPhone(state.answers.phone);
-    const validOtp = /^\d{6}$/.test(state.answers.otpCode);
-    sendOtpButton.disabled = !(validEmail && validPhone) || state.answers.otpVerified;
-    verifyOtpButton.disabled = !(state.answers.otpSent && validOtp) || state.answers.otpVerified;
-    submitButton.disabled = !(validEmail && validPhone && state.answers.otpVerified && state.answers.consent);
-    updateContactMascot(validEmail, validPhone, validOtp);
+    submitButton.disabled = !(validEmail && validPhone && state.answers.consent);
+    updateContactMascot(validEmail, validPhone);
   };
 
-  emailInput.addEventListener("input", () => {
-    state.answers.otpSent = false;
-    state.answers.otpVerified = false;
-    validate();
-  });
-  phoneInput.addEventListener("input", () => {
-    state.answers.otpSent = false;
-    state.answers.otpVerified = false;
-    validate();
-  });
-  if (otpInput) otpInput.addEventListener("input", validate);
+  emailInput.addEventListener("input", validate);
+  phoneInput.addEventListener("input", validate);
   consentInput.addEventListener("change", validate);
-  sendOtpButton.addEventListener("click", async () => {
-    const sent = await sendOtpCode(sendOtpButton, error);
-    if (sent) renderContactStep();
-  });
-  verifyOtpButton.addEventListener("click", async () => {
-    await verifyOtpCode(verifyOtpButton, error);
-    validate();
-  });
   submitButton.addEventListener("click", submitLeadAndShowThanks);
   bindBackLink();
   validate();
@@ -574,55 +397,15 @@ function updateChoiceMascot(step) {
   moveGuideMascot(target);
 }
 
-function updateProfileMascot(validBirthDate) {
-  const nextTarget = !validBirthDate
-    ? "birthDate"
-    : !state.answers.name
-      ? "name"
-      : !state.answers.kana
-        ? "kana"
-        : !state.answers.residency
-          ? "residency"
-          : "profileSubmit";
-  moveGuideMascot(getGuideElement(nextTarget));
-}
-
-function updatePhoneMascot(validPhone) {
-  const nextTarget = !validPhone
-    ? "phone"
-    : !state.answers.consent
-      ? "consent"
-      : "phoneSubmit";
-  moveGuideMascot(getGuideElement(nextTarget));
-}
-
-function updateContactMascot(validEmail, validPhone, validOtp) {
+function updateContactMascot(validEmail, validPhone) {
   const nextTarget = !validEmail
     ? "email"
     : !validPhone
       ? "phone"
-      : !state.answers.otpSent
-        ? "otpSend"
-        : !state.answers.otpVerified
-          ? (validOtp ? "otpVerify" : "otp")
-          : !state.answers.consent
-            ? "consent"
-            : "contactSubmit";
+      : !state.answers.consent
+        ? "consent"
+        : "contactSubmit";
   moveGuideMascot(getGuideElement(nextTarget));
-}
-
-function isValidBirthDate(value) {
-  if (!/^\d{8}$/.test(value)) {
-    return false;
-  }
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(4, 6));
-  const day = Number(value.slice(6, 8));
-  if (year < 1950 || year > 2010 || month < 1 || month > 12 || day < 1 || day > 31) {
-    return false;
-  }
-  const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 function formatBirthDate() {
@@ -799,67 +582,6 @@ async function submitToSpreadsheet(stage) {
   }
 
   return true;
-}
-
-async function sendOtpCode(button, errorElement) {
-  button.disabled = true;
-  button.textContent = "送信中...";
-  errorElement.textContent = "";
-
-  try {
-    const response = await fetch(`${API_BASE}/api/send-otp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ phone: state.answers.phone })
-    });
-    const result = await response.json();
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || "SMS送信に失敗しました");
-    }
-    state.answers.otpSent = true;
-    state.answers.otpVerified = false;
-    return true;
-  } catch (error) {
-    errorElement.textContent = "認証コードを送信できませんでした。設定を確認してください。";
-    state.answers.otpSent = false;
-    return false;
-  } finally {
-    button.disabled = false;
-    button.textContent = state.answers.otpSent ? "認証コードを再送信" : "認証コードを送信";
-  }
-}
-
-async function verifyOtpCode(button, errorElement) {
-  button.disabled = true;
-  button.textContent = "認証中...";
-  errorElement.textContent = "";
-
-  try {
-    const response = await fetch(`${API_BASE}/api/verify-otp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        phone: state.answers.phone,
-        code: state.answers.otpCode
-      })
-    });
-    const result = await response.json();
-    if (!response.ok || !result.success || !result.verified) {
-      throw new Error(result.error || "SMS認証に失敗しました");
-    }
-    state.answers.otpVerified = true;
-    button.textContent = "認証済み";
-  } catch (error) {
-    errorElement.textContent = "認証コードが正しくありません";
-    state.answers.otpVerified = false;
-    button.textContent = "認証する";
-  } finally {
-    button.disabled = false;
-  }
 }
 
 async function submitLeadAndShowThanks() {
@@ -1279,7 +1001,7 @@ if (lineChatButton) {
 
 surveyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (state.currentStep === 6 && state.answers.otpVerified) {
+  if (state.currentStep === 6) {
     submitLeadAndShowThanks();
   }
 });
