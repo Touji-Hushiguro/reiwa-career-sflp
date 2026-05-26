@@ -79,6 +79,7 @@ const bookingHours = Array.from({ length: 11 }, (_, index) => String(index + 10)
 const bookingMinutes = ["00", "15", "30", "45"];
 const BUSINESS_START_HOUR = 10;
 const BUSINESS_END_HOUR = 20;
+const INTERVIEW_MINUTES = 15;
 const SPREADSHEET_ENDPOINT = "https://project-alorn.vercel.app/api/submit";
 const API_BASE = SPREADSHEET_ENDPOINT.replace(/\/api\/submit$/, "");
 const LINE_CHAT_URL = "https://liff.line.me/2008784499-92DR4hmy/landing?follow=%40872lluqj&lp=7hDJTd&liff_id=2008784499-92DR4hmy";
@@ -513,7 +514,7 @@ function getInterviewStartEnd() {
     return { start: "", end: "" };
   }
   const start = getBookingStartDate();
-  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const end = new Date(start.getTime() + INTERVIEW_MINUTES * 60 * 1000);
   return {
     start: start.toISOString(),
     end: end.toISOString()
@@ -932,7 +933,7 @@ function formatCalendarDate(date) {
 
 function getCalendarEvent() {
   const start = getBookingStartDate();
-  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const end = new Date(start.getTime() + INTERVIEW_MINUTES * 60 * 1000);
   const method = state.answers.bookingMethod || "未選択";
   const label = `${state.answers.bookingDate || ""} ${state.answers.bookingTime || ""}`.trim();
   return {
