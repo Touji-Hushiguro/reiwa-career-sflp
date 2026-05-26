@@ -84,6 +84,7 @@ const API_BASE = SPREADSHEET_ENDPOINT.replace(/\/api\/submit$/, "");
 const LINE_CHAT_URL = "https://liff.line.me/2008784499-92DR4hmy/landing?follow=%40872lluqj&lp=7hDJTd&liff_id=2008784499-92DR4hmy";
 let allBookingDates = [];
 let datesExpanded = false;
+let pendingLeadSubmitPromise = null;
 
 function renderStep() {
   progressText.textContent = `STEP ${state.currentStep} / 6`;
@@ -276,19 +277,34 @@ function renderNameStep() {
   const input = document.getElementById("name");
   const nextButton = document.getElementById("nameNext");
   const error = document.getElementById("nameError");
-  const validate = () => {
+  let isComposingName = false;
+
+  const validate = (commitValue = false) => {
+    if (isComposingName && !commitValue) {
+      return;
+    }
     state.answers.name = normalizeKatakanaName(input.value);
-    input.value = state.answers.name;
+    if (commitValue) {
+      input.value = state.answers.name;
+    }
     const valid = isFullWidthKatakanaName(state.answers.name);
     nextButton.disabled = !valid;
     error.textContent = state.answers.name && !valid ? "全角カタカナで入力してください" : "";
     moveGuideMascot(getGuideElement(valid ? "nameSubmit" : "name"));
   };
 
-  input.addEventListener("input", validate);
+  input.addEventListener("compositionstart", () => {
+    isComposingName = true;
+  });
+  input.addEventListener("compositionend", () => {
+    isComposingName = false;
+    validate(true);
+  });
+  input.addEventListener("input", () => validate(false));
+  input.addEventListener("blur", () => validate(true));
   nextButton.addEventListener("click", () => goToStep(6));
   bindBackLink();
-  validate();
+  validate(true);
   input.focus();
 }
 
@@ -589,21 +605,19 @@ async function submitLeadAndShowThanks() {
   if (!submitButton || submitButton.disabled) return;
 
   submitButton.disabled = true;
-  submitButton.textContent = "送信中...";
+  submitButton.textContent = "面談予約へ進みます...";
 
-  try {
-    await submitToSpreadsheet("lead_submitted");
-    pushGtmEvent("sflp_lead_submit", {
-      work_start: state.answers.timing,
-      gender: state.answers.gender,
-      prefecture: state.answers.prefecture
-    });
-    finishSurvey();
-  } catch (error) {
-    submitButton.disabled = false;
-    submitButton.textContent = "面談予約へ進む";
-    alert("送信に失敗しました。時間をおいてもう一度お試しください。");
-  }
+  pushGtmEvent("sflp_lead_submit", {
+    work_start: state.answers.timing,
+    gender: state.answers.gender,
+    prefecture: state.answers.prefecture
+  });
+  finishSurvey();
+
+  pendingLeadSubmitPromise = submitToSpreadsheet("lead_submitted").catch((error) => {
+    console.error("Lead submit failed", error);
+    return false;
+  });
 }
 
 function finishSurvey() {
@@ -874,6 +888,9 @@ async function confirmBooking() {
   bookingSubmit.textContent = "送信中...";
 
   try {
+    if (pendingLeadSubmitPromise) {
+      await pendingLeadSubmitPromise;
+    }
     await submitToSpreadsheet("booking_completed");
     pushGtmEvent("sflp_booking_complete", {
       booking_method: state.answers.bookingMethod,
