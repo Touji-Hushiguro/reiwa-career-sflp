@@ -797,35 +797,42 @@ body.modal-open .survey-brand-footer {
 
 .online-line-cta {
   margin: 0 0 18px;
-  padding: 14px 12px;
+  padding: 16px 14px 18px;
   border: 2px solid var(--main);
   border-radius: 10px;
-  background: #fff;
-  text-align: left;
+  background: linear-gradient(180deg, #ffffff 0%, #f4fffb 100%);
+  text-align: center;
 }
 
 .online-line-cta[hidden] {
   display: none;
 }
 
+.online-line-copy {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
 .online-line-cta p {
   margin: 0;
-  font-size: 14px;
+  color: var(--text);
+  font-size: 14.5px;
   font-weight: 700;
-  line-height: 1.55;
+  line-height: 1.7;
 }
 
 .online-line-cta .online-line-title {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   color: var(--main-dark);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 900;
+  line-height: 1.4;
 }
 
 .online-line-button {
   width: 100%;
   min-height: 52px;
-  margin-top: 12px;
+  margin-top: 14px;
   border: 2px solid #00b900;
   border-radius: 10px;
   background: #00c300;
