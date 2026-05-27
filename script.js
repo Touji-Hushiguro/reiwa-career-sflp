@@ -71,6 +71,8 @@ const bookingEmail = document.getElementById("bookingEmail");
 const bookingSubmit = document.getElementById("bookingSubmit");
 const completeDate = document.getElementById("completeDate");
 const completeMethod = document.getElementById("completeMethod");
+const onlineLineCta = document.getElementById("onlineLineCta");
+const onlineLineButton = document.getElementById("onlineLineButton");
 const moreDatesButton = document.getElementById("moreDatesButton");
 const googleCalendarButton = document.getElementById("googleCalendarButton");
 const icsCalendarButton = document.getElementById("icsCalendarButton");
@@ -83,6 +85,7 @@ const INTERVIEW_MINUTES = 15;
 const SPREADSHEET_ENDPOINT = "https://project-alorn.vercel.app/api/submit";
 const API_BASE = SPREADSHEET_ENDPOINT.replace(/\/api\/submit$/, "");
 const LINE_CHAT_URL = "https://liff.line.me/2008784499-92DR4hmy/landing?follow=%40872lluqj&lp=7hDJTd&liff_id=2008784499-92DR4hmy";
+const ONLINE_MEETING_LINE_URL = "https://liff.line.me/2008784499-92DR4hmy/landing?follow=%40872lluqj&lp=r2hqpT&liff_id=2008784499-92DR4hmy";
 let allBookingDates = [];
 let datesExpanded = false;
 let pendingLeadSubmitPromise = null;
@@ -909,6 +912,9 @@ async function confirmBooking() {
   bookingComplete.hidden = false;
   completeDate.textContent = `${state.answers.bookingDateIso} ${state.answers.bookingTime.replace("〜", "")}`;
   completeMethod.textContent = state.answers.bookingMethod;
+  if (onlineLineCta) {
+    onlineLineCta.hidden = state.answers.bookingMethod !== "オンライン";
+  }
   thanksPage.classList.remove("booking-focus");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1014,6 +1020,12 @@ function downloadIcsCalendar() {
 if (lineChatButton) {
   lineChatButton.addEventListener("click", () => {
     window.open(LINE_CHAT_URL, "_blank", "noopener");
+  });
+}
+
+if (onlineLineButton) {
+  onlineLineButton.addEventListener("click", () => {
+    window.open(ONLINE_MEETING_LINE_URL, "_blank", "noopener");
   });
 }
 

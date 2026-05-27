@@ -795,6 +795,46 @@ body.modal-open .survey-brand-footer {
   margin: 0;
 }
 
+.online-line-cta {
+  margin: 0 0 18px;
+  padding: 14px 12px;
+  border: 2px solid var(--main);
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+}
+
+.online-line-cta[hidden] {
+  display: none;
+}
+
+.online-line-cta p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.online-line-cta .online-line-title {
+  margin-bottom: 4px;
+  color: var(--main-dark);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.online-line-button {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 12px;
+  border: 2px solid #00b900;
+  border-radius: 10px;
+  background: #00c300;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: 3px 4px #06a906;
+}
+
 .booking-submit,
 .calendar-button,
 .calendar-secondary-button {
