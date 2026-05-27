@@ -265,7 +265,7 @@ function renderNameStep() {
     <h1 class="step-title">お名前をカタカナで入力してください</h1>
     <div class="field guide-field" data-guide="name">
       <label for="name">氏名（カタカナ）</label>
-      <input id="name" name="name" autocomplete="off" placeholder="ヤマダ タロウ" value="${escapeHtml(state.answers.name)}">
+      <input id="name" name="name" inputmode="kana" lang="ja" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="ヤマダ タロウ" value="${escapeHtml(state.answers.name)}">
     </div>
     <p class="error-text" id="nameError"></p>
     <div class="question-buttons has-mascot" data-guide="nameSubmit">
