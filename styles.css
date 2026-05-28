@@ -529,7 +529,10 @@ body.modal-open .survey-brand-footer {
 }
 
 .triple-select select {
-  padding-right: 10px;
+  min-width: 0;
+  padding: 0 30px 0 12px;
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .note {
