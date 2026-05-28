@@ -315,10 +315,6 @@ function renderNameStep() {
 function renderContactStep() {
   stepContainer.innerHTML = `
     <h1 class="step-title">連絡先を入力してください</h1>
-    <div class="field guide-field" data-guide="email">
-      <label for="email">メールアドレス</label>
-      <input id="email" name="email" inputmode="email" autocomplete="email" placeholder="example@mail.com" value="${escapeHtml(state.answers.email)}">
-    </div>
     <div class="field guide-field" data-guide="phone">
       <label for="phone">電話番号</label>
       <input id="phone" name="phone" inputmode="tel" autocomplete="tel" maxlength="13" placeholder="090-1234-5678" value="${escapeHtml(state.answers.phone)}">
@@ -335,30 +331,26 @@ function renderContactStep() {
     ${guideMascotMarkup("guideMascot")}
   `;
 
-  const emailInput = document.getElementById("email");
   const phoneInput = document.getElementById("phone");
   const consentInput = document.getElementById("consent");
   const submitButton = document.getElementById("submitButton");
 
   const validate = () => {
-    state.answers.email = emailInput.value.trim();
     state.answers.phone = formatPhoneInput(phoneInput.value);
     phoneInput.value = state.answers.phone;
     state.answers.consent = consentInput.checked;
 
-    const validEmail = isValidEmail(state.answers.email);
     const validPhone = isValidPhone(state.answers.phone);
-    submitButton.disabled = !(validEmail && validPhone && state.answers.consent);
-    updateContactMascot(validEmail, validPhone);
+    submitButton.disabled = !(validPhone && state.answers.consent);
+    updateContactMascot(validPhone);
   };
 
-  emailInput.addEventListener("input", validate);
   phoneInput.addEventListener("input", validate);
   consentInput.addEventListener("change", validate);
   submitButton.addEventListener("click", submitLeadAndShowThanks);
   bindBackLink();
   validate();
-  emailInput.focus();
+  phoneInput.focus();
 }
 
 function bindBackLink() {
@@ -417,14 +409,12 @@ function updateChoiceMascot(step) {
   moveGuideMascot(target);
 }
 
-function updateContactMascot(validEmail, validPhone) {
-  const nextTarget = !validEmail
-    ? "email"
-    : !validPhone
-      ? "phone"
-      : !state.answers.consent
-        ? "consent"
-        : "contactSubmit";
+function updateContactMascot(validPhone) {
+  const nextTarget = !validPhone
+    ? "phone"
+    : !state.answers.consent
+      ? "consent"
+      : "contactSubmit";
   moveGuideMascot(getGuideElement(nextTarget));
 }
 
@@ -553,7 +543,7 @@ function buildSubmissionPayload(stage) {
     birthDate: state.answers.birthDate,
     gender: state.answers.gender,
     phone: state.answers.phone,
-    email: state.answers.email || state.answers.bookingEmail,
+    email: isFinal ? state.answers.bookingEmail : "",
     prefecture: state.answers.prefecture,
     postalCode: "",
     residenceStatus: "",
@@ -639,10 +629,6 @@ function finishSurvey() {
 function renderBookingOptions() {
   allBookingDates = getBookingDates();
   datesExpanded = false;
-  if (!state.answers.bookingEmail && state.answers.email) {
-    state.answers.bookingEmail = state.answers.email;
-    bookingEmail.value = state.answers.email;
-  }
   renderDateOptions();
   renderTimeOptions();
   if (!document.getElementById("bookingGuideMascot")) {
