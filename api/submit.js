@@ -5,6 +5,10 @@ const SHEET_NAME = (process.env.SHEET_NAME || "顧客データDB").trim();
 const TOTAL_COLS = 17;
 const TZ = "Asia/Tokyo";
 
+// IS チーム転送先 (架電部隊が見るシート)
+const IS_DEST_SS_ID = "1XrGfX7JMiGPpa2ICd1pWrkDrHvd4hFzZoIsdxzCvqas";
+const IS_DEST_SHEET_NAME = "顧客データDB";
+
 const COL = {
   TIMESTAMP: 1,
   UTM_SOURCE: 16,
@@ -198,6 +202,209 @@ async function sheetsRequest(accessToken, range, options = {}) {
   return result;
 }
 
+// ============================================================
+// IS 転送先用ヘルパ (任意の spreadsheetId 対応版)
+// ============================================================
+async function sheetsValuesGet(accessToken, ssId, range) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${ssId}/values/${encodeURIComponent(range)}`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  const text = await response.text();
+  const result = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    throw new Error(result.error && result.error.message ? result.error.message : "Sheets values.get failed");
+  }
+  return result;
+}
+
+async function sheetsValuesUpdate(accessToken, ssId, range, rowValues) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${ssId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ values: [rowValues] })
+  });
+  const text = await response.text();
+  const result = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    throw new Error(result.error && result.error.message ? result.error.message : "Sheets values.update failed");
+  }
+  return result;
+}
+
+async function sheetsBatchUpdate(accessToken, ssId, requests) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${ssId}:batchUpdate`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ requests })
+  });
+  const text = await response.text();
+  const result = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    throw new Error(result.error && result.error.message ? result.error.message : "Sheets batchUpdate failed");
+  }
+  return result;
+}
+
+async function getSheetIdByName(accessToken, ssId, sheetName) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${ssId}?fields=sheets(properties(sheetId,title))`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  const text = await response.text();
+  const result = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    throw new Error(result.error && result.error.message ? result.error.message : "spreadsheets.get failed");
+  }
+  const sheets = result.sheets || [];
+  const found = sheets.find((s) => s.properties && s.properties.title === sheetName);
+  return found && found.properties ? found.properties.sheetId : null;
+}
+
+// IS 転送先の A列で実データ最終行を特定
+async function findLastDataRowInIS(accessToken) {
+  const response = await sheetsValuesGet(accessToken, IS_DEST_SS_ID, `${IS_DEST_SHEET_NAME}!A:A`);
+  const rows = response.values || [];
+  let last = 1;
+  for (let i = rows.length - 1; i >= 0; i -= 1) {
+    const cell = rows[i] && rows[i][0];
+    if (cell !== undefined && cell !== null && String(cell).trim() !== "") {
+      last = i + 1;
+      break;
+    }
+  }
+  return last;
+}
+
+// IS 転送先で電話番号 (J列) から既存行を逆順検索
+async function findRowByPhoneInIS(accessToken, phone) {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return -1;
+
+  const lastDataRow = await findLastDataRowInIS(accessToken);
+  if (lastDataRow <= 1) return -1;
+
+  const startRow = Math.max(2, lastDataRow - 499);
+  const response = await sheetsValuesGet(
+    accessToken,
+    IS_DEST_SS_ID,
+    `${IS_DEST_SHEET_NAME}!J${startRow}:J${lastDataRow}`
+  );
+  const values = response.values || [];
+  for (let i = values.length - 1; i >= 0; i -= 1) {
+    const cell = normalizePhone(values[i] && values[i][0]);
+    if (cell === normalized) return startRow + i;
+  }
+  return -1;
+}
+
+// ============================================================
+// IS チーム転送先シートへの転送 (1電話番号 = 1行)
+//  - mode='insert' (firstSubmit 由来): 既存行があれば update 扱い、なければ末尾 insert
+//  - mode='update' (finalSubmit 由来): 既存行の M:O だけ上書き、無ければ insert フォールバック
+//  - J列(電話)空ならスキップ / try-catch で本体は止めない
+// ============================================================
+async function transferToIS(accessToken, data, options) {
+  const mode = (options && options.mode) || "insert";
+  try {
+    const phone = String((data && data.phone) || "").trim();
+    if (!phone) {
+      console.log("[IS転送] J列(電話)空のためスキップ");
+      return;
+    }
+
+    // update モード: 既存行を探して M:O 更新
+    if (mode === "update") {
+      const existingRow = await findRowByPhoneInIS(accessToken, phone);
+      if (existingRow > 1) {
+        await sheetsValuesUpdate(
+          accessToken,
+          IS_DEST_SS_ID,
+          `${IS_DEST_SHEET_NAME}!M${existingRow}:O${existingRow}`,
+          [
+            data.interviewDateTime1 || "",
+            data.interviewDateTime2 || "",
+            data.interviewDateTime3 || ""
+          ]
+        );
+        console.log(`[IS転送/update] 電話=${phone} → 行 ${existingRow} の M:O 更新`);
+        return;
+      }
+      console.warn(`[IS転送/update] 電話=${phone} の既存行なし → insert にフォールバック`);
+    }
+
+    // insert モード: 既存行があれば update に切り替え (重複防止)
+    if (mode === "insert") {
+      const existingRow = await findRowByPhoneInIS(accessToken, phone);
+      if (existingRow > 1) {
+        const hasInterview =
+          data.interviewDateTime1 || data.interviewDateTime2 || data.interviewDateTime3;
+        if (hasInterview) {
+          await sheetsValuesUpdate(
+            accessToken,
+            IS_DEST_SS_ID,
+            `${IS_DEST_SHEET_NAME}!M${existingRow}:O${existingRow}`,
+            [
+              data.interviewDateTime1 || "",
+              data.interviewDateTime2 || "",
+              data.interviewDateTime3 || ""
+            ]
+          );
+          console.log(
+            `[IS転送/insert→merge] 電話=${phone} 既存行 ${existingRow} の M:O 更新 (重複insert回避)`
+          );
+        } else {
+          console.log(
+            `[IS転送/insert→merge] 電話=${phone} 既存行 ${existingRow} あり・面談日時なし → スキップ`
+          );
+        }
+        return;
+      }
+    }
+
+    // 末尾に 1 行 insertDimension (inheritFromBefore で書式継承)
+    const lastDataRow = await findLastDataRowInIS(accessToken);
+    const newRow = lastDataRow + 1;
+    const sheetId = await getSheetIdByName(accessToken, IS_DEST_SS_ID, IS_DEST_SHEET_NAME);
+    if (sheetId === undefined || sheetId === null) {
+      throw new Error(`転送先タブ「${IS_DEST_SHEET_NAME}」が見つかりません`);
+    }
+
+    await sheetsBatchUpdate(accessToken, IS_DEST_SS_ID, [
+      {
+        insertDimension: {
+          range: {
+            sheetId,
+            dimension: "ROWS",
+            startIndex: lastDataRow, // 0-indexed: lastDataRow の直後に挿入
+            endIndex: lastDataRow + 1
+          },
+          inheritFromBefore: true
+        }
+      }
+    ]);
+
+    await sheetsValuesUpdate(
+      accessToken,
+      IS_DEST_SS_ID,
+      `${IS_DEST_SHEET_NAME}!A${newRow}:Q${newRow}`,
+      buildRow(data)
+    );
+
+    console.log(`[IS転送/insert] 電話=${phone} → 行 ${newRow} (1行 insert, 書式継承)`);
+  } catch (e) {
+    console.error("[IS転送エラー]", (e && e.message) || e);
+  }
+}
+
 async function findRowByPhone(accessToken, phone) {
   const normalized = normalizePhone(phone);
   if (!normalized) return -1;
@@ -299,20 +506,27 @@ module.exports = async function handler(req, res) {
     if (action === "finalSubmit") {
       if (rowIndex > 0) {
         await updateRow(accessToken, rowIndex, data);
+        // finalSubmit 由来 → IS 転送先の M:O を update (重複行を作らない)
+        await transferToIS(accessToken, data, { mode: "update" });
       } else {
         rowIndex = await findRowByPhone(accessToken, data.phone);
         if (rowIndex > 0) {
           await updateRow(accessToken, rowIndex, data);
+          await transferToIS(accessToken, data, { mode: "update" });
         } else {
           const appended = await appendRow(accessToken, data);
           rowIndex = appended.rowIndex;
           sheetTimestamp = appended.timestamp;
+          // 既存行が無く新規追記 → IS 側も insert モード (内部で重複防止)
+          await transferToIS(accessToken, data, { mode: "insert" });
         }
       }
     } else {
       const appended = await appendRow(accessToken, data);
       rowIndex = appended.rowIndex;
       sheetTimestamp = appended.timestamp;
+      // firstSubmit 由来 → IS 転送先に新規 insert (既存行があれば自動 merge)
+      await transferToIS(accessToken, data, { mode: "insert" });
     }
 
     json(res, 200, { success: true, rowIndex, sheetTimestamp });
