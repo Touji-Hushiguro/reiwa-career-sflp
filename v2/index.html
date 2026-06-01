@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>れいわキャリア | 無料転職サポート v2</title>
+    <!-- Google Tag Manager -->
+    <script>
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({"gtm.start":
+      new Date().getTime(),event:"gtm.js"});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!="dataLayer"?"&l="+l:"";j.async=true;j.src=
+      "https://www.googletagmanager.com/gtm.js?id="+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,"script","dataLayer","GTM-5HKK3XQP");
+    </script>
+    <!-- End Google Tag Manager -->
+    <link rel="stylesheet" href="styles.css?v=1">
+  </head>
+  <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5HKK3XQP"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div class="site-shell" id="lpContent">
+      <section id="landingPage">
+        <header class="site-header">
+          <div class="logo"><img src="../assets/reiwa-career-logo-cropped.png" alt="正社員の転職なら れいわキャリア"></div>
+          <div class="notice-bar">未掲載求人多数！ 完全無料の転職サポート</div>
+        </header>
+
+        <main>
+          <section class="hero" aria-label="無料面談の案内">
+            <div class="hero-visual portrait-visual generated-visual hero-generated">
+              <div class="hero-copy">正社員の転職なら、<br>まずは無料で面談！</div>
+            </div>
+          </section>
+
+          <section class="appeal-section" aria-label="サポート内容">
+            <article class="appeal-card">
+              <div class="appeal-image portrait-visual generated-visual appeal-resume-image" aria-hidden="true"></div>
+              <div class="appeal-labels">
+                <span>履歴書作成サポート</span>
+                <span>職務経歴書サポート</span>
+                <span>求人が豊富</span>
+              </div>
+            </article>
+            <article class="appeal-card">
+              <div class="appeal-image portrait-visual generated-visual appeal-office-image" aria-hidden="true"></div>
+              <div class="appeal-labels">
+                <span>正社員求人</span>
+                <span>希望条件をヒアリング</span>
+                <span>安定した職場</span>
+              </div>
+            </article>
+            <article class="appeal-card">
+              <div class="appeal-image portrait-visual generated-visual appeal-consult-image" aria-hidden="true"></div>
+              <div class="appeal-labels">
+                <span>初回面談はWeb可</span>
+                <span>専任アドバイザー</span>
+                <span>まずは電話相談</span>
+              </div>
+            </article>
+            <article class="appeal-card">
+              <div class="appeal-image portrait-visual generated-visual appeal-growth-image" aria-hidden="true"></div>
+              <div class="appeal-labels">
+                <span>収入アップ相談</span>
+                <span>未経験歓迎</span>
+                <span>非公開求人あり</span>
+              </div>
+            </article>
+          </section>
+        </main>
+
+        <footer class="site-footer">
+          <div class="logo footer-logo"><img src="../assets/reiwa-career-logo-cropped.png" alt="正社員の転職なら れいわキャリア"></div>
+          <small>© れいわキャリア. All Rights Reserved.</small>
+        </footer>
+      </section>
+
+      <section class="thanks-page" id="thanksPage" hidden>
+        <header class="site-header">
+          <div class="logo"><img src="../assets/reiwa-career-logo-cropped.png" alt="正社員の転職なら れいわキャリア"></div>
+          <div class="notice-bar">未掲載求人多数！ 完全無料の転職サポート</div>
+        </header>
+
+        <main class="thanks-main">
+          <section class="thanks-intro">
+            <h1>ご登録ありがとうございます！<br>続いて面談の予約を行います</h1>
+            <p>これから<span id="thanksName">あなた</span>さんに専任のアドバイザーがつきます！<br>以下の流れでサポートします</p>
+          </section>
+
+          <section class="booking-section" aria-label="面談予約">
+            <div class="booking-head">
+              <h2>面談予約の内容</h2>
+            </div>
+            <div class="booking-complete" id="bookingComplete" hidden>
+              <h2>予約が完了しました</h2>
+              <dl>
+                <div>
+                  <dt>日時：</dt>
+                  <dd id="completeDate">-</dd>
+                </div>
+                <div>
+                  <dt>面談時間：</dt>
+                  <dd>15分</dd>
+                </div>
+                <div>
+                  <dt>面談方法：</dt>
+                  <dd id="completeMethod">-</dd>
+                </div>
+              </dl>
+              <div class="online-line-cta" id="onlineLineCta" hidden>
+                <div class="online-line-copy">
+                  <p class="online-line-title">オンライン面談URLをお送りします</p>
+                  <p>公式LINEを追加後、トーク画面で<br>フルネームを送ってください。</p>
+                </div>
+                <button class="online-line-button" id="onlineLineButton" type="button">公式LINEを追加する</button>
+              </div>
+              <div class="calendar-actions">
+                <button class="calendar-button" id="googleCalendarButton" type="button">Googleカレンダーに追加する</button>
+                <button class="calendar-secondary-button" id="icsCalendarButton" type="button">その他のカレンダー用に保存</button>
+              </div>
+            </div>
+            <div class="booking-panel" id="bookingPanel">
+              <div class="booking-card is-visible" data-booking-card="method">
+                <h3>面談方法を選択してください</h3>
+                <div class="method-grid" id="methodGrid">
+                  <button class="booking-option" type="button" data-method="オンライン">🌐 オンライン</button>
+                  <button class="booking-option" type="button" data-method="電話">📞 電話</button>
+                </div>
+              </div>
+              <div class="booking-card" data-booking-card="date">
+                <div class="date-grid" id="dateGrid"></div>
+                <button class="select-like" id="moreDatesButton" type="button">その他の日付 <span>▼</span></button>
+              </div>
+              <div class="booking-card" data-booking-card="time">
+                <div class="time-grid" id="timeGrid"></div>
+              </div>
+              <div class="booking-card" data-booking-card="email">
+                <h3>予約情報を受け取るメールアドレス</h3>
+                <label class="email-field">
+                  <span>メールアドレス</span>
+                  <input id="bookingEmail" type="text" inputmode="email" autocomplete="email" placeholder="例) test@example.com">
+                </label>
+                <button class="booking-submit" id="bookingSubmit" type="button" disabled>予約をする</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="flow-section" aria-label="ご利用の流れ">
+            <article class="flow-card">
+              <div class="flow-number">2</div>
+              <div class="flow-text">
+                <h2>お仕事相談</h2>
+                <p>いただいた希望条件をもとに、多数の求人からあなたに合った仕事をご紹介します</p>
+              </div>
+              <div class="advisor-illustration advisor-man" aria-hidden="true"></div>
+            </article>
+            <article class="flow-card">
+              <div class="flow-number">3</div>
+              <div class="flow-text">
+                <h2>応募の検討</h2>
+                <p>興味がある求人があれば応募に進めます。無理に応募を勧めることはありません</p>
+              </div>
+              <div class="advisor-illustration advisor-woman-blue" aria-hidden="true"></div>
+            </article>
+            <article class="flow-card">
+              <div class="flow-number">4</div>
+              <div class="flow-text">
+                <h2>選考</h2>
+                <p>求人ごとの面接対策や書類対策を行い、選考通過をサポートします</p>
+              </div>
+              <div class="advisor-illustration advisor-pink" aria-hidden="true"></div>
+            </article>
+            <article class="flow-card">
+              <div class="flow-number">5</div>
+              <div class="flow-text">
+                <h2>採用・入社</h2>
+                <p>入社までの手続きも完全無料でサポートします</p>
+              </div>
+              <div class="advisor-illustration advisor-ok" aria-hidden="true"></div>
+            </article>
+          </section>
+
+          <section class="chat-section">
+            <h2>【しごと探しの疑問、LINEで解決！】</h2>
+            <p>気軽に情報収集！担当者より返信いたします！<br>あなたのペースで、あなたの気になることを質問OK！</p>
+            <button class="chat-button" id="lineChatButton" type="button">チャットで相談する</button>
+          </section>
+
+          <section class="features-section">
+            <h2>れいわキャリアの特徴</h2>
+            <p class="feature-lead">20代・未経験・フリーター専門の転職支援サービスです。専任アドバイザーが希望を丁寧にヒアリングし、非公開求人10万件の中からあなたに合った正社員のお仕事をご紹介します。</p>
+            <article class="feature-card">
+              <h3>あなたに合う仕事がわかる！</h3>
+              <div class="feature-illust feature-match" aria-hidden="true"></div>
+              <div>
+                <p>性格や経歴を丁寧に伺い、できる・やってみたいと思える仕事をご紹介します</p>
+              </div>
+            </article>
+            <article class="feature-card">
+              <h3>未経験OKな求人がたくさん！</h3>
+              <div class="feature-illust feature-beginner" aria-hidden="true"></div>
+              <div>
+                <p>未経験歓迎の求人を中心に、求人票だけではわからない情報もお伝えします</p>
+              </div>
+            </article>
+            <article class="feature-card">
+              <h3>履歴書対策や面接対策までサポートで安心！</h3>
+              <div class="feature-illust feature-support" aria-hidden="true"></div>
+              <div>
+                <p>履歴書・職務経歴書の作成や面接準備もサポートします</p>
+              </div>
+            </article>
+          </section>
+        </main>
+
+        <footer class="site-footer">
+          <div class="logo footer-logo"><img src="../assets/reiwa-career-logo-cropped.png" alt="正社員の転職なら れいわキャリア"></div>
+          <small>© れいわキャリア. All Rights Reserved.</small>
+        </footer>
+      </section>
+    </div>
+
+    <div class="survey-overlay" id="surveyOverlay" aria-live="polite">
+      <form class="survey-modal" id="surveyForm" novalidate>
+        <div class="progress-text" id="progressText">STEP 1 / 6</div>
+        <div id="stepContainer"></div>
+        <!-- Step 8: 面談日程選択（クイック+その他プルダウン） -->
+        <div class="step hidden" id="step8">
+            <div class="step-indicator">ステップ 7/7</div>
+            <p class="thanks-line">ご登録ありがとうございます!</p>
+            <h2 class="question-title">まだ転職するか決めてなくてもOK!<br>まずは<span class="highlight-3min">3分</span>だけ、お話ししましょう</h2>
+
+            <div class="radio-options" id="step8Options">
+                <div class="quick-slots-loading">読み込み中…</div>
+            </div>
+
+            <div class="other-slot-container" id="otherSlotContainer" style="display: none;">
+                <div class="input-group">
+                    <label class="input-label">ご希望日</label>
+                    <select class="input-field" id="otherDate" onchange="onOtherDateChange()">
+                        <option value="">選択してください</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">ご希望時間</label>
+                    <select class="input-field" id="otherTime" onchange="onOtherTimeChange()" disabled>
+                        <option value="">選択してください</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-back" onclick="prevStep()">戻る</button>
+                <button class="btn btn-next" id="nextBtn8" onclick="submitForm()" disabled>次へ</button>
+            </div>
+        </div>
+      </form>
+    </div>
+    <header class="survey-brand-header" aria-hidden="true">
+      <div class="survey-brand-inner">
+        <img src="../assets/reiwa-career-logo-cropped.png" alt="">
+      </div>
+      <div class="survey-brand-bar">未掲載求人多数！ 完全無料の転職サポート</div>
+    </header>
+    <footer class="survey-brand-footer" aria-hidden="true">
+      <img src="../assets/reiwa-career-logo-cropped.png" alt="">
+      <small>© れいわキャリア. All Rights Reserved.</small>
+    </footer>
+    <script src="script.js?v=1"></script>
+  </body>
+</html>
