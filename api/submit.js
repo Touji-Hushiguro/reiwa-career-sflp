@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { waitUntil } = require("@vercel/functions");
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "1Vq0uK-w9M4EKft3l1TyzNz06yPrhtTTovH0Nb7inM1w";
 const SHEET_NAME = (process.env.SHEET_NAME || "顧客データDB").trim();
@@ -506,19 +507,19 @@ module.exports = async function handler(req, res) {
     if (action === "finalSubmit") {
       if (rowIndex > 0) {
         await updateRow(accessToken, rowIndex, data);
-        // finalSubmit 由来 → IS 転送先の M:O を update (重複行を作らない)
-        await transferToIS(accessToken, data, { mode: "update" });
+        // IS 転送は waitUntil で保証付きバックグラウンド実行
+        // (handler return 後も Vercel が最大60秒まで処理を保証)
+        waitUntil(transferToIS(accessToken, data, { mode: "update" }));
       } else {
         rowIndex = await findRowByPhone(accessToken, data.phone);
         if (rowIndex > 0) {
           await updateRow(accessToken, rowIndex, data);
-          await transferToIS(accessToken, data, { mode: "update" });
+          waitUntil(transferToIS(accessToken, data, { mode: "update" }));
         } else {
           const appended = await appendRow(accessToken, data);
           rowIndex = appended.rowIndex;
           sheetTimestamp = appended.timestamp;
-          // 既存行が無く新規追記 → IS 側も insert モード (内部で重複防止)
-          await transferToIS(accessToken, data, { mode: "insert" });
+          waitUntil(transferToIS(accessToken, data, { mode: "insert" }));
         }
       }
     } else {
@@ -526,7 +527,7 @@ module.exports = async function handler(req, res) {
       rowIndex = appended.rowIndex;
       sheetTimestamp = appended.timestamp;
       // firstSubmit 由来 → IS 転送先に新規 insert (既存行があれば自動 merge)
-      await transferToIS(accessToken, data, { mode: "insert" });
+      waitUntil(transferToIS(accessToken, data, { mode: "insert" }));
     }
 
     json(res, 200, { success: true, rowIndex, sheetTimestamp });

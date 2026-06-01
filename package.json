@@ -1,5 +1,8 @@
 {
   "name": "reiwa-career-sflp",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@vercel/functions": "^3.6.1"
+  }
 }
