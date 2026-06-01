@@ -482,6 +482,34 @@ async function updateRow(accessToken, rowIndex, data) {
   });
 }
 
+function scheduleCalendarRegistration(data) {
+  waitUntil(
+    fetch("https://reiwa-form-api.vercel.app/api/calendar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://sflp.reiwa-career.com"
+      },
+      body: JSON.stringify({
+        fullName: data.fullName || "",
+        phone: data.phone || "",
+        email: data.email || "",
+        birthDate: data.birthDate || "",
+        gender: data.gender || "",
+        prefecture: data.prefecture || "",
+        workStart: data.workStart || "",
+        interviewDateTime1: data.interviewDateTime1 || "",
+        interviewStart: data.interviewStart || "",
+        interviewEnd: data.interviewEnd || "",
+        version: data.version || "v2"
+      })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(j) { console.log("[calendar] result:", JSON.stringify(j)); })
+      .catch(function(e) { console.error("[calendar] error:", e && e.message ? e.message : e); })
+  );
+}
+
 module.exports = async function handler(req, res) {
   setCors(req, res);
 
@@ -522,6 +550,7 @@ module.exports = async function handler(req, res) {
           waitUntil(transferToIS(accessToken, data, { mode: "insert" }));
         }
       }
+      scheduleCalendarRegistration(data);
     } else {
       const appended = await appendRow(accessToken, data);
       rowIndex = appended.rowIndex;
