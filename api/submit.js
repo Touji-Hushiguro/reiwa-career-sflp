@@ -484,7 +484,7 @@ async function updateRow(accessToken, rowIndex, data) {
 
 function scheduleCalendarRegistration(data) {
   waitUntil(
-    fetch("https://reiwa-form-api.vercel.app/api/calendar", {
+    fetch("https://reiwa-form-api-box.vercel.app/api/calendar", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
